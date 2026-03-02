@@ -21,6 +21,7 @@ function getToday() {
 export default function Home() {
   const [name, setName] = useState("");
   const [submittedName, setSubmittedName] = useState("");
+const [entries, setEntries] = useState<any[]>([]);
   const [data, setData] = useState({});
   const [saving, setSaving] = useState({});
 
