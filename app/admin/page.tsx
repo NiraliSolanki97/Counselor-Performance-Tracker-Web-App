@@ -19,9 +19,12 @@ export default function AdminPage() {
   const [loggedIn, setLoggedIn] = useState(false);
   const [error, setError] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
-  const [filterDate, setFilterDate] = useState("");
-  const [filterName, setFilterName] = useState("");
-  const [view, setView] = useState<"daily" | "monthly" | "yearly">("daily");
+  const [view, setView] = useState<"monthly" | "daily">("monthly");
+  const [selectedMonth, setSelectedMonth] = useState(() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
+  });
+  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
   const now = new Date();
 
   useEffect(() => {
@@ -63,150 +66,173 @@ export default function AdminPage() {
   const getSummary = (entries: any[]) => {
     const totals: any = {};
     CARDS.forEach(c => totals[c.key] = 0);
-    entries.forEach(e => CARDS.forEach(c => { totals[c.key] += parseInt(e[c.key]?.count || "0"); }));
+    entries.forEach(e => CARDS.forEach(c => {
+      totals[c.key] += parseInt(e[c.key]?.count || "0");
+    }));
     return totals;
   };
 
-  const filtered = entries.filter(e => {
-    const matchDate = filterDate ? e.date === filterDate : true;
-    const matchName = filterName ? e.counselor?.toLowerCase().includes(filterName.toLowerCase()) : true;
-    return matchDate && matchName;
-  });
+  const counselorNames = [...new Set(entries.map(e => e.counselor))].filter(Boolean) as string[];
 
-  const grouped: Record<string, any[]> = {};
-  filtered.forEach(e => {
-    const key = e.date || "Unknown";
-    if (!grouped[key]) grouped[key] = [];
-    grouped[key].push(e);
-  });
-  const sortedDates = Object.keys(grouped).sort((a, b) => a > b ? -1 : 1);
-
-  // Monthly data
-  const monthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-  const monthEntries = entries.filter(e => e.date?.startsWith(monthStr));
-  const counselorNames = [...new Set(entries.map(e => e.counselor))].filter(Boolean);
-
-  const getMonthlyCounselorSummary = (name: string) => {
-    return getSummary(monthEntries.filter(e => e.counselor === name));
-  };
-
-  const getYearlyCounselorSummary = (name: string) => {
-    const yearEntries = entries.filter(e => e.date?.startsWith(`${now.getFullYear()}`) && e.counselor === name);
-    return getSummary(yearEntries);
-  };
+  const monthEntries = entries.filter(e => e.date?.startsWith(selectedMonth));
+  const dailyEntries = entries.filter(e => e.date === selectedDate);
 
   return (
     <div className="min-h-screen bg-gray-50">
+
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-4">
-        <div className="max-w-7xl mx-auto flex items-center justify-between">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-800">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
-              {(["daily", "monthly", "yearly"] as const).map(v => (
-                <button key={v} onClick={() => setView(v)}
-                  className={`px-3 py-1 rounded-md text-xs font-semibold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500"}`}>
-                  {v}
-                </button>
-              ))}
+              <button
+                onClick={() => setView("monthly")}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition ${view === "monthly" ? "bg-white shadow text-green-700" : "text-gray-500"}`}
+              >
+                Monthly
+              </button>
+              <button
+                onClick={() => setView("daily")}
+                className={`px-4 py-1.5 rounded-md text-xs font-bold transition ${view === "daily" ? "bg-white shadow text-green-700" : "text-gray-500"}`}
+              >
+                Daily
+              </button>
             </div>
             <button onClick={() => setLoggedIn(false)} className="text-xs text-gray-400 hover:text-red-400">Logout</button>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-6">
+      <div className="max-w-6xl mx-auto px-6 py-6">
 
-        {/* Daily View */}
-        {view === "daily" && (
-          <>
-            <div className="flex gap-3 mb-5 flex-wrap">
-              <input type="date" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={filterDate} onChange={(e) => setFilterDate(e.target.value)} />
-              <input type="text" placeholder="Search counselor..." className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={filterName} onChange={(e) => setFilterName(e.target.value)} />
-              {(filterDate || filterName) && <button onClick={() => { setFilterDate(""); setFilterName(""); }} className="text-xs text-gray-400 hover:text-red-400">Clear</button>}
-            </div>
-
-            {sortedDates.length === 0 && <p className="text-gray-400 text-center mt-20">No entries found.</p>}
-
-            {sortedDates.map(date => (
-              <div key={date} className="mb-6">
-                <p className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">📅 {date}</p>
-                <div className="space-y-2">
-                  {grouped[date].map(entry => (
-                    <div key={entry.counselor + entry.date} className="bg-white rounded-xl border border-gray-200 px-4 py-3">
-                      <div className="flex items-center gap-6">
-                        <p className="text-sm font-bold text-gray-800 w-28 shrink-0">👤 {entry.counselor}</p>
-                        <div className="flex gap-4 flex-wrap">
-                          {CARDS.map(card => (
-                            <div key={card.key} className="text-center min-w-[60px]">
-                              <p className="text-xs text-gray-400 font-medium">{card.label}</p>
-                              <p className="text-base font-bold text-gray-800">{entry[card.key]?.count || 0}</p>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </>
-        )}
-
-        {/* Monthly View */}
+        {/* MONTHLY VIEW — Default */}
         {view === "monthly" && (
           <div>
-            <h2 className="text-base font-bold text-gray-700 mb-4">
-              {now.toLocaleString("default", { month: "long" })} {now.getFullYear()} — All Counselors
-            </h2>
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-xs">
+            {/* Month Picker */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold text-gray-600">
+                {new Date(selectedMonth + "-01").toLocaleString("default", { month: "long", year: "numeric" })} — Counselor Summary
+              </h2>
+              <input
+                type="month"
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(e.target.value)}
+              />
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-3 font-bold text-gray-600">Counselor</th>
-                    {CARDS.map(c => <th key={c.key} className="text-center px-3 py-3 font-bold text-gray-600">{c.label}</th>)}
+                  <tr className="bg-green-50 border-b-2 border-green-100">
+                    <th className="text-left px-5 py-3 font-bold text-gray-700 w-40">Counselor</th>
+                    {CARDS.map(c => (
+                      <th key={c.key} className="text-center px-4 py-3 font-bold text-gray-700 border-l border-gray-100">
+                        {c.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {counselorNames.map(name => {
-                    const s = getMonthlyCounselorSummary(name);
+                  {counselorNames.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-10 text-gray-400">No data available</td>
+                    </tr>
+                  )}
+                  {counselorNames.map((name, idx) => {
+                    const s = getSummary(monthEntries.filter(e => e.counselor === name));
                     return (
-                      <tr key={name} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3 font-bold text-gray-800">{name}</td>
-                        {CARDS.map(c => <td key={c.key} className="text-center px-3 py-3 font-bold text-gray-800">{s[c.key]}</td>)}
+                      <tr key={name} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                        <td className="px-5 py-3 font-bold text-gray-800">{name}</td>
+                        {CARDS.map(c => (
+                          <td key={c.key} className="text-center px-4 py-3 font-bold text-gray-800 border-l border-gray-100">
+                            {s[c.key]}
+                          </td>
+                        ))}
                       </tr>
                     );
                   })}
-                  {counselorNames.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-gray-400">No data</td></tr>}
+                  {/* Total Row */}
+                  {counselorNames.length > 0 && (() => {
+                    const total = getSummary(monthEntries);
+                    return (
+                      <tr className="bg-green-50 border-t-2 border-green-200">
+                        <td className="px-5 py-3 font-bold text-green-800">Total</td>
+                        {CARDS.map(c => (
+                          <td key={c.key} className="text-center px-4 py-3 font-bold text-green-800 border-l border-green-100">
+                            {total[c.key]}
+                          </td>
+                        ))}
+                      </tr>
+                    );
+                  })()}
                 </tbody>
               </table>
             </div>
           </div>
         )}
 
-        {/* Yearly View */}
-        {view === "yearly" && (
+        {/* DAILY VIEW */}
+        {view === "daily" && (
           <div>
-            <h2 className="text-base font-bold text-gray-700 mb-4">{now.getFullYear()} — Yearly Summary</h2>
-            <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-              <table className="w-full text-xs">
+            {/* Date Picker */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-sm font-bold text-gray-600">
+                {selectedDate} — Daily Report
+              </h2>
+              <input
+                type="date"
+                className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+              />
+            </div>
+
+            {/* Table */}
+            <div className="bg-white rounded-xl border border-gray-200 overflow-x-auto">
+              <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-gray-50 border-b border-gray-200">
-                    <th className="text-left px-4 py-3 font-bold text-gray-600">Counselor</th>
-                    {CARDS.map(c => <th key={c.key} className="text-center px-3 py-3 font-bold text-gray-600">{c.label}</th>)}
+                  <tr className="bg-green-50 border-b-2 border-green-100">
+                    <th className="text-left px-5 py-3 font-bold text-gray-700 w-40">Counselor</th>
+                    {CARDS.map(c => (
+                      <th key={c.key} className="text-center px-4 py-3 font-bold text-gray-700 border-l border-gray-100">
+                        {c.label}
+                      </th>
+                    ))}
                   </tr>
                 </thead>
                 <tbody>
-                  {counselorNames.map(name => {
-                    const s = getYearlyCounselorSummary(name);
+                  {dailyEntries.length === 0 && (
+                    <tr>
+                      <td colSpan={7} className="text-center py-10 text-gray-400">No entries for this date</td>
+                    </tr>
+                  )}
+                  {dailyEntries.map((entry, idx) => (
+                    <tr key={entry.counselor} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
+                      <td className="px-5 py-3 font-bold text-gray-800">{entry.counselor}</td>
+                      {CARDS.map(c => (
+                        <td key={c.key} className="text-center px-4 py-3 font-bold text-gray-800 border-l border-gray-100">
+                          {entry[c.key]?.count || 0}
+                        </td>
+                      ))}
+                    </tr>
+                  ))}
+                  {/* Total Row */}
+                  {dailyEntries.length > 0 && (() => {
+                    const total = getSummary(dailyEntries);
                     return (
-                      <tr key={name} className="border-b border-gray-100 hover:bg-gray-50">
-                        <td className="px-4 py-3 font-bold text-gray-800">{name}</td>
-                        {CARDS.map(c => <td key={c.key} className="text-center px-3 py-3 font-bold text-gray-800">{s[c.key]}</td>)}
+                      <tr className="bg-green-50 border-t-2 border-green-200">
+                        <td className="px-5 py-3 font-bold text-green-800">Total</td>
+                        {CARDS.map(c => (
+                          <td key={c.key} className="text-center px-4 py-3 font-bold text-green-800 border-l border-green-100">
+                            {total[c.key]}
+                          </td>
+                        ))}
                       </tr>
                     );
-                  })}
-                  {counselorNames.length === 0 && <tr><td colSpan={7} className="text-center py-6 text-gray-400">No data</td></tr>}
+                  })()}
                 </tbody>
               </table>
             </div>
