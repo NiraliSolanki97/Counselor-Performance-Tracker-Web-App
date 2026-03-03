@@ -78,16 +78,14 @@ export default function AdminPage() {
   const dailyEntries = entries.filter(e => e.date === selectedDate);
   const yearEntries = entries.filter(e => e.date?.startsWith(selectedYear));
 
-  const CleanTable = ({ rows, showTotal }: { rows: { label: string; data: any }[]; showTotal: boolean }) => {
-    const total = getSummary(
-      view === "daily" ? dailyEntries : view === "monthly" ? monthEntries : yearEntries
-    );
+  const CleanTable = ({ rows, showTotal, totalEntries }: { rows: { label: string; data: any }[]; showTotal: boolean; totalEntries: any[] }) => {
+    const total = getSummary(totalEntries);
     return (
       <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
         <table className="w-full text-sm border-collapse">
           <thead>
             <tr className="bg-green-50 border-b-2 border-green-100">
-              <th className="text-left px-6 py-4 font-bold text-gray-700 w-48">
+              <th className="text-left px-6 py-4 font-bold text-gray-700 w-48 whitespace-nowrap">
                 {view === "yearly" ? "Month" : "Counselor"}
               </th>
               {CARDS.map(c => (
@@ -100,9 +98,7 @@ export default function AdminPage() {
           <tbody>
             {rows.length === 0 && (
               <tr>
-                <td colSpan={7} className="text-center py-12 text-gray-400 text-sm">
-                  No data available
-                </td>
+                <td colSpan={7} className="text-center py-12 text-gray-400 text-sm">No data available</td>
               </tr>
             )}
             {rows.map((row, idx) => (
@@ -131,7 +127,6 @@ export default function AdminPage() {
     );
   };
 
-  // Build rows for each view
   const dailyRows = dailyEntries.map(e => ({
     label: e.counselor,
     data: getSummary([e]),
@@ -187,40 +182,25 @@ export default function AdminPage() {
             {view === "yearly" && `Year ${selectedYear}`}
             {" "}— {view.charAt(0).toUpperCase() + view.slice(1)} Report
           </h2>
-
           {view === "monthly" && (
-            <input
-              type="month"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-              value={selectedMonth}
-              onChange={(e) => setSelectedMonth(e.target.value)}
-            />
+            <input type="month" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
           )}
           {view === "daily" && (
-            <input
-              type="date"
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-              value={selectedDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-            />
+            <input type="date" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
           )}
           {view === "yearly" && (
-            <select
-              className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300"
-              value={selectedYear}
-              onChange={(e) => setSelectedYear(e.target.value)}
-            >
-              {[2024, 2025, 2026, 2027].map(y => (
+            <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
+              {[2024, 2025, 2026, 2027, 2028].map(y => (
                 <option key={y} value={String(y)}>{y}</option>
               ))}
             </select>
           )}
         </div>
 
-        {/* Table */}
-        {view === "daily" && <CleanTable rows={dailyRows} showTotal={true} />}
-        {view === "monthly" && <CleanTable rows={monthlyRows} showTotal={true} />}
-        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={false} />}
+        {/* Tables */}
+        {view === "daily" && <CleanTable rows={dailyRows} showTotal={true} totalEntries={dailyEntries} />}
+        {view === "monthly" && <CleanTable rows={monthlyRows} showTotal={true} totalEntries={monthEntries} />}
+        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={false} totalEntries={yearEntries} />}
 
       </div>
     </div>
