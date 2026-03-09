@@ -16,11 +16,8 @@ const ADMIN_PASSWORD = "admin123";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
-  const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem("adminLoggedIn") === "true");
+  const [loggedIn, setLoggedIn] = useState(false);
   const [error, setError] = useState("");
-  useEffect(() => {
-    if (localStorage.getItem("adminLoggedIn") === "true") setLoggedIn(true);
-  }, []);
   const [entries, setEntries] = useState<any[]>([]);
   const [view, setView] = useState<"monthly" | "daily" | "yearly">("monthly");
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -32,6 +29,11 @@ export default function AdminPage() {
     const now = new Date();
     return now.getMonth() >= 3 ? String(now.getFullYear()) : String(now.getFullYear() - 1);
   });
+  const [popup, setPopup] = useState<{ counselor: string; card: string; notes: string[] } | null>(null);
+
+  useEffect(() => {
+    if (localStorage.getItem("adminLoggedIn") === "true") setLoggedIn(true);
+  }, []);
 
   useEffect(() => {
     if (!loggedIn) return;
@@ -42,15 +44,17 @@ export default function AdminPage() {
   }, [loggedIn]);
 
   const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) { setLoggedIn(true); localStorage.setItem("adminLoggedIn", "true"); }
-    else setError("Wrong password.");
+    if (password === ADMIN_PASSWORD) {
+      setLoggedIn(true);
+      localStorage.setItem("adminLoggedIn", "true");
+    } else setError("Wrong password.");
   };
 
   if (!loggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="bg-white rounded-xl shadow-md p-5 w-full max-w-xs border border-gray-100">
-          <h1 className="text-lg font-bold text-gray-800 mb-1">Admin Login</h1>
+          <h1 className="text-lg font-bold text-gray-800 mb-1">Admin Login 🔐</h1>
           <p className="text-gray-400 text-xs mb-4">Enter password to continue</p>
           <input
             type="password"
@@ -62,7 +66,7 @@ export default function AdminPage() {
           />
           {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
           <button onClick={handleLogin} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm">
-            Login
+            Login →
           </button>
         </div>
       </div>
@@ -92,7 +96,14 @@ export default function AdminPage() {
            (entryYear === fyStartYear + 1 && entryMonth < 3);
   });
 
-  const CleanTable = ({ rows, showTotal, totalEntries }: { rows: { label: string; data: any }[]; showTotal: boolean; totalEntries: any[] }) => {
+  const handleCellClick = (counselorName: string, cardKey: string, cardLabel: string, relevantEntries: any[]) => {
+    const notes = relevantEntries
+      .filter(e => e.counselor === counselorName && e[cardKey]?.notes?.trim())
+      .map(e => `📅 ${e.date}: ${e[cardKey].notes}`);
+    setPopup({ counselor: `${counselorName} — ${cardLabel}`, card: cardKey, notes });
+  };
+
+  const CleanTable = ({ rows, showTotal, totalEntries, relevantEntries }: { rows: { label: string; data: any; counselorName?: string }[]; showTotal: boolean; totalEntries: any[]; relevantEntries: any[] }) => {
     const total = getSummary(totalEntries);
     return (
       <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
@@ -119,7 +130,11 @@ export default function AdminPage() {
               <tr key={row.label} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
                 <td className="px-6 py-4 font-bold text-gray-800 whitespace-nowrap">{row.label}</td>
                 {CARDS.map(c => (
-                  <td key={c.key} className="text-center px-6 py-4 font-bold text-gray-700 border-l border-gray-100">
+                  <td
+                    key={c.key}
+                    className={`text-center px-6 py-4 font-bold text-gray-700 border-l border-gray-100 ${row.counselorName ? "cursor-pointer hover:bg-green-50 hover:text-green-700" : ""}`}
+                    onClick={() => row.counselorName && handleCellClick(row.counselorName, c.key, c.label, relevantEntries)}
+                  >
                     {row.data[c.key] ?? 0}
                   </td>
                 ))}
@@ -141,8 +156,8 @@ export default function AdminPage() {
     );
   };
 
-  const dailyRows = dailyEntries.map(e => ({ label: e.counselor, data: getSummary([e]) }));
-  const monthlyRows = counselorNames.map(name => ({ label: name, data: getSummary(monthEntries.filter(e => e.counselor === name)) }));
+  const dailyRows = dailyEntries.map(e => ({ label: e.counselor, counselorName: e.counselor, data: getSummary([e]) }));
+  const monthlyRows = counselorNames.map(name => ({ label: name, counselorName: name, data: getSummary(monthEntries.filter(e => e.counselor === name)) }));
 
   const yearlyRows = Array.from({ length: 12 }, (_, i) => {
     const monthIndex = (i + 3) % 12;
@@ -157,6 +172,29 @@ export default function AdminPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+
+      {/* Popup */}
+      {popup && (
+        <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50" onClick={() => setPopup(null)}>
+          <div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-md mx-4" onClick={e => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-bold text-gray-800">{popup.counselor}</h2>
+              <button onClick={() => setPopup(null)} className="text-gray-400 hover:text-gray-600 text-xl font-bold">×</button>
+            </div>
+            {popup.notes.length === 0 ? (
+              <p className="text-gray-400 text-sm">No notes written for this category.</p>
+            ) : (
+              <div className="space-y-2 max-h-64 overflow-y-auto">
+                {popup.notes.map((note, i) => (
+                  <div key={i} className="bg-gray-50 rounded-lg px-4 py-3 text-sm text-gray-700">{note}</div>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-800">Admin Dashboard</h1>
@@ -173,6 +211,7 @@ export default function AdminPage() {
           </div>
         </div>
       </div>
+
       <div className="max-w-6xl mx-auto px-6 py-6">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-bold text-gray-600">
@@ -191,12 +230,13 @@ export default function AdminPage() {
             </select>
           )}
         </div>
-        {view === "daily" && <CleanTable rows={dailyRows} showTotal={true} totalEntries={dailyEntries} />}
-        {view === "monthly" && <CleanTable rows={monthlyRows} showTotal={true} totalEntries={monthEntries} />}
-        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={true} totalEntries={yearEntries} />}
+
+        <p className="text-xs text-gray-400 mb-3">💡 Click on any number to see notes</p>
+
+        {view === "daily" && <CleanTable rows={dailyRows} showTotal={true} totalEntries={dailyEntries} relevantEntries={dailyEntries} />}
+        {view === "monthly" && <CleanTable rows={monthlyRows} showTotal={true} totalEntries={monthEntries} relevantEntries={monthEntries} />}
+        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={false} totalEntries={yearEntries} relevantEntries={yearEntries} />}
       </div>
     </div>
   );
 }
-
-
