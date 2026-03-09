@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, onSnapshot, collection, query } from "firebase/firestore";
 
 const CARDS = [
   { key: "warm_leads", label: "Warm Leads" },
-  { key: "walk_ins", label: "Walk-ins" },
-  { key: "shortlistings", label: "Shortlistings" },
   { key: "applications", label: "Applications" },
+  { key: "walk_ins", label: "Walk-ins" },
   { key: "deposit", label: "Deposits" },
+  { key: "shortlistings", label: "Shortlistings" },
   { key: "visa_approvals", label: "Visa Approvals" },
 ];
 
@@ -20,7 +20,6 @@ export default function Home() {
   const [name, setName] = useState("");
   const [submittedName, setSubmittedName] = useState("");
   const [data, setData] = useState<any>({});
-  const [saving, setSaving] = useState<any>({});
   const [saved, setSaved] = useState(false);
   const [view, setView] = useState<"daily" | "monthly" | "yearly">("daily");
   const [allEntries, setAllEntries] = useState<any[]>([]);
@@ -87,18 +86,29 @@ export default function Home() {
   };
 
   const monthEntries = allEntries.filter(e => e.date?.startsWith(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`));
-  const yearEntries = allEntries.filter(e => e.date?.startsWith(`${now.getFullYear()}`));
+
+  // Financial Year April to March
+  const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
+  const yearEntries = allEntries.filter(e => {
+    if (!e.date) return false;
+    const entryDate = new Date(e.date);
+    const entryMonth = entryDate.getMonth();
+    const entryYear = entryDate.getFullYear();
+    return (entryYear === fyStartYear && entryMonth >= 3) ||
+           (entryYear === fyStartYear + 1 && entryMonth < 3);
+  });
+
   const monthlySummary = getSummary(monthEntries);
   const yearlySummary = getSummary(yearEntries);
 
   if (!submittedName) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-md border border-gray-100">
-          <h1 className="text-2xl font-bold text-gray-800 mb-1">Welcome 👋</h1>
-          <p className="text-gray-400 text-sm mt-1">Enter your name to start tracking</p>
+        <div className="bg-white rounded-xl shadow-md p-6 w-full max-w-xs border border-gray-100">
+          <h1 className="text-lg font-bold text-gray-800 mb-1">Welcome 👋</h1>
+          <p className="text-gray-400 text-xs mb-4">Enter your name to start tracking</p>
           <input
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 text-gray-700 font-medium focus:outline-none focus:ring-2 focus:ring-green-400 mb-4 mt-6"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mb-3"
             placeholder="Your full name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -106,7 +116,7 @@ export default function Home() {
           />
           <button
             onClick={handleNameSubmit}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition"
+            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm"
           >
             Continue →
           </button>
@@ -118,10 +128,10 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
-            <h1 className="text-lg font-bold text-gray-800">{submittedName}</h1>
+            <h1 className="text-base font-bold text-gray-800">{submittedName}</h1>
             <p className="text-xs text-gray-400">{today}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -130,7 +140,7 @@ export default function Home() {
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`px-3 py-1.5 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500"}`}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500"}`}
                 >
                   {v}
                 </button>
@@ -146,12 +156,12 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="max-w-5xl mx-auto px-6 py-6">
+      <div className="max-w-5xl mx-auto px-6 py-5">
 
         {/* Daily View */}
         {view === "daily" && (
           <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3 mb-4">
               {CARDS.map((card) => (
                 <div key={card.key} className="bg-white rounded-xl border border-gray-200 p-3">
                   <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-2">{card.label}</p>
@@ -173,15 +183,14 @@ export default function Home() {
                 </div>
               ))}
             </div>
-            {/* Save Button */}
-            <div className="flex items-center gap-3 mt-2">
+            <div className="flex items-center gap-3">
               <button
                 onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold px-8 py-2.5 rounded-xl transition"
+                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg transition text-sm"
               >
                 Save
               </button>
-              {saved && <p className="text-green-600 text-sm font-semibold">✅ Saved successfully!</p>}
+              {saved && <p className="text-green-600 text-sm font-semibold">✅ Saved!</p>}
             </div>
           </>
         )}
@@ -192,29 +201,25 @@ export default function Home() {
             <h2 className="text-sm font-bold text-gray-600 mb-4">
               {now.toLocaleString("default", { month: "long" })} {now.getFullYear()} — My Summary
             </h2>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm mb-6">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-green-50 border-b-2 border-green-100">
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-4 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">
-                        {c.label}
-                      </th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     {CARDS.map(c => (
-                      <td key={c.key} className="text-center px-6 py-4 font-bold text-gray-800 border-r border-gray-100">
-                        {monthlySummary[c.key]}
-                      </td>
+                      <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-r border-gray-100">{monthlySummary[c.key]}</td>
                     ))}
                   </tr>
                 </tbody>
               </table>
             </div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-6 mb-3">Day by Day</h3>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Day by Day</h3>
             <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
               <table className="w-full text-sm border-collapse">
                 <thead>
@@ -246,30 +251,26 @@ export default function Home() {
         {/* Yearly View */}
         {view === "yearly" && (
           <div>
-            <h2 className="text-sm font-bold text-gray-600 mb-4">{now.getFullYear()} — My Yearly Summary</h2>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
+            <h2 className="text-sm font-bold text-gray-600 mb-4">FY {fyStartYear}-{fyStartYear + 1} (Apr-Mar) — My Summary</h2>
+            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm mb-6">
               <table className="w-full text-sm border-collapse">
                 <thead>
                   <tr className="bg-green-50 border-b-2 border-green-100">
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-4 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">
-                        {c.label}
-                      </th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     {CARDS.map(c => (
-                      <td key={c.key} className="text-center px-6 py-4 font-bold text-gray-800 border-r border-gray-100">
-                        {yearlySummary[c.key]}
-                      </td>
+                      <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-r border-gray-100">{yearlySummary[c.key]}</td>
                     ))}
                   </tr>
                 </tbody>
               </table>
             </div>
-            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mt-6 mb-3">Month by Month</h3>
+            <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Month by Month</h3>
             <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
               <table className="w-full text-sm border-collapse">
                 <thead>
@@ -282,13 +283,15 @@ export default function Home() {
                 </thead>
                 <tbody>
                   {Array.from({ length: 12 }, (_, i) => {
-                    const monthStr = `${now.getFullYear()}-${String(i + 1).padStart(2, "0")}`;
+                    const monthIndex = (i + 3) % 12;
+                    const year = monthIndex < 3 ? fyStartYear + 1 : fyStartYear;
+                    const monthStr = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
                     const mEntries = yearEntries.filter(e => e.date?.startsWith(monthStr));
                     const mTotals = getSummary(mEntries);
                     return (
                       <tr key={monthStr} className={`border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
                         <td className="px-6 py-3 font-semibold text-gray-700">
-                          {new Date(now.getFullYear(), i, 1).toLocaleString("default", { month: "long" })}
+                          {new Date(year, monthIndex, 1).toLocaleString("default", { month: "long", year: "numeric" })}
                         </td>
                         {CARDS.map(c => (
                           <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-l border-gray-100">{mTotals[c.key] || 0}</td>
@@ -301,7 +304,6 @@ export default function Home() {
             </div>
           </div>
         )}
-
       </div>
     </div>
   );
