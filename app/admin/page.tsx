@@ -18,6 +18,9 @@ export default function AdminPage() {
   const [password, setPassword] = useState("");
   const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem("adminLoggedIn") === "true");
   const [error, setError] = useState("");
+  useEffect(() => {
+    if (localStorage.getItem("adminLoggedIn") === "true") setLoggedIn(true);
+  }, []);
   const [entries, setEntries] = useState<any[]>([]);
   const [view, setView] = useState<"monthly" | "daily" | "yearly">("monthly");
   const [selectedMonth, setSelectedMonth] = useState(() => {
@@ -195,4 +198,5 @@ export default function AdminPage() {
     </div>
   );
 }
+
 
