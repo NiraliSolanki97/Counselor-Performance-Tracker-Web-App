@@ -1,14 +1,14 @@
-"use client";
+﻿"use client";
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
 import { collection, onSnapshot } from "firebase/firestore";
 
 const CARDS = [
   { key: "warm_leads", label: "Warm Leads" },
-  { key: "walk_ins", label: "Walk-ins" },
-  { key: "shortlistings", label: "Shortlistings" },
   { key: "applications", label: "Applications" },
+  { key: "walk_ins", label: "Walk-ins" },
   { key: "deposit", label: "Deposits" },
+  { key: "shortlistings", label: "Shortlistings" },
   { key: "visa_approvals", label: "Visa Approvals" },
 ];
 
@@ -25,8 +25,10 @@ export default function AdminPage() {
     return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
   });
   const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split("T")[0]);
-  const [selectedYear, setSelectedYear] = useState(() => String(new Date().getFullYear()));
-  const now = new Date();
+  const [selectedYear, setSelectedYear] = useState(() => {
+    const now = new Date();
+    return now.getMonth() >= 3 ? String(now.getFullYear()) : String(now.getFullYear() - 1);
+  });
 
   useEffect(() => {
     if (!loggedIn) return;
@@ -44,20 +46,20 @@ export default function AdminPage() {
   if (!loggedIn) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-2xl shadow-lg p-10 w-full max-w-sm border border-gray-100">
-          <h1 className="text-xl font-bold text-gray-800 mb-1">Admin Login 🔐</h1>
-          <p className="text-gray-400 text-sm mb-6">Enter password to continue</p>
+        <div className="bg-white rounded-xl shadow-md p-5 w-full max-w-xs border border-gray-100">
+          <h1 className="text-lg font-bold text-gray-800 mb-1">Admin Login</h1>
+          <p className="text-gray-400 text-xs mb-4">Enter password to continue</p>
           <input
             type="password"
-            className="w-full border border-gray-200 rounded-xl px-4 py-3 mb-3 font-medium focus:outline-none focus:ring-2 focus:ring-green-400"
+            className="w-full border border-gray-200 rounded-lg px-3 py-2 mb-3 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-green-400"
             placeholder="Password"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             onKeyDown={(e) => e.key === "Enter" && handleLogin()}
           />
           {error && <p className="text-red-400 text-sm mb-2">{error}</p>}
-          <button onClick={handleLogin} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded-xl transition">
-            Login →
+          <button onClick={handleLogin} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm">
+            Login
           </button>
         </div>
       </div>
@@ -76,7 +78,16 @@ export default function AdminPage() {
   const counselorNames = [...new Set(entries.map(e => e.counselor))].filter(Boolean) as string[];
   const monthEntries = entries.filter(e => e.date?.startsWith(selectedMonth));
   const dailyEntries = entries.filter(e => e.date === selectedDate);
-  const yearEntries = entries.filter(e => e.date?.startsWith(selectedYear));
+
+  const fyStartYear = Number(selectedYear);
+  const yearEntries = entries.filter(e => {
+    if (!e.date) return false;
+    const entryDate = new Date(e.date);
+    const entryMonth = entryDate.getMonth();
+    const entryYear = entryDate.getFullYear();
+    return (entryYear === fyStartYear && entryMonth >= 3) ||
+           (entryYear === fyStartYear + 1 && entryMonth < 3);
+  });
 
   const CleanTable = ({ rows, showTotal, totalEntries }: { rows: { label: string; data: any }[]; showTotal: boolean; totalEntries: any[] }) => {
     const total = getSummary(totalEntries);
@@ -102,7 +113,7 @@ export default function AdminPage() {
               </tr>
             )}
             {rows.map((row, idx) => (
-              <tr key={row.label} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"}`}>
+              <tr key={row.label} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
                 <td className="px-6 py-4 font-bold text-gray-800 whitespace-nowrap">{row.label}</td>
                 {CARDS.map(c => (
                   <td key={c.key} className="text-center px-6 py-4 font-bold text-gray-700 border-l border-gray-100">
@@ -127,81 +138,59 @@ export default function AdminPage() {
     );
   };
 
-  const dailyRows = dailyEntries.map(e => ({
-    label: e.counselor,
-    data: getSummary([e]),
-  }));
-
-  const monthlyRows = counselorNames.map(name => ({
-    label: name,
-    data: getSummary(monthEntries.filter(e => e.counselor === name)),
-  }));
+  const dailyRows = dailyEntries.map(e => ({ label: e.counselor, data: getSummary([e]) }));
+  const monthlyRows = counselorNames.map(name => ({ label: name, data: getSummary(monthEntries.filter(e => e.counselor === name)) }));
 
   const yearlyRows = Array.from({ length: 12 }, (_, i) => {
-    const monthStr = `${selectedYear}-${String(i + 1).padStart(2, "0")}`;
+    const monthIndex = (i + 3) % 12;
+    const year = monthIndex < 3 ? fyStartYear + 1 : fyStartYear;
+    const monthStr = `${year}-${String(monthIndex + 1).padStart(2, "0")}`;
     const mEntries = yearEntries.filter(e => e.date?.startsWith(monthStr));
     return {
-      label: new Date(Number(selectedYear), i, 1).toLocaleString("default", { month: "long" }),
+      label: new Date(year, monthIndex, 1).toLocaleString("default", { month: "long", year: "numeric" }),
       data: getSummary(mEntries),
     };
   });
 
   return (
     <div className="min-h-screen bg-gray-50">
-
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <h1 className="text-lg font-bold text-gray-800">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
               {(["monthly", "daily", "yearly"] as const).map(v => (
-                <button
-                  key={v}
-                  onClick={() => setView(v)}
-                  className={`px-4 py-1.5 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500 hover:text-gray-700"}`}
-                >
+                <button key={v} onClick={() => setView(v)}
+                  className={`px-4 py-1.5 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500"}`}>
                   {v}
                 </button>
               ))}
             </div>
-            <button onClick={() => setLoggedIn(false)} className="text-xs text-gray-400 hover:text-red-400">
-              Logout
-            </button>
+            <button onClick={() => setLoggedIn(false)} className="text-xs text-gray-400 hover:text-red-400">Logout</button>
           </div>
         </div>
       </div>
-
       <div className="max-w-6xl mx-auto px-6 py-6">
-
-        {/* Filter Row */}
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-sm font-bold text-gray-600">
             {view === "monthly" && new Date(selectedMonth + "-01").toLocaleString("default", { month: "long", year: "numeric" })}
             {view === "daily" && selectedDate}
-            {view === "yearly" && `Year ${selectedYear}`}
-            {" "}— {view.charAt(0).toUpperCase() + view.slice(1)} Report
+            {view === "yearly" && `FY ${fyStartYear}-${fyStartYear + 1} (Apr-Mar)`}
+            {" "}- {view.charAt(0).toUpperCase() + view.slice(1)} Report
           </h2>
-          {view === "monthly" && (
-            <input type="month" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />
-          )}
-          {view === "daily" && (
-            <input type="date" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
-          )}
+          {view === "monthly" && <input type="month" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedMonth} onChange={(e) => setSelectedMonth(e.target.value)} />}
+          {view === "daily" && <input type="date" className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />}
           {view === "yearly" && (
             <select className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-green-300" value={selectedYear} onChange={(e) => setSelectedYear(e.target.value)}>
-              {[2024, 2025, 2026, 2027, 2028].map(y => (
-                <option key={y} value={String(y)}>{y}</option>
+              {[2023, 2024, 2025, 2026, 2027].map(y => (
+                <option key={y} value={String(y)}>FY {y}-{y + 1}</option>
               ))}
             </select>
           )}
         </div>
-
-        {/* Tables */}
         {view === "daily" && <CleanTable rows={dailyRows} showTotal={true} totalEntries={dailyEntries} />}
         {view === "monthly" && <CleanTable rows={monthlyRows} showTotal={true} totalEntries={monthEntries} />}
-        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={false} totalEntries={yearEntries} />}
-
+        {view === "yearly" && <CleanTable rows={yearlyRows} showTotal={true} totalEntries={yearEntries} />}
       </div>
     </div>
   );
