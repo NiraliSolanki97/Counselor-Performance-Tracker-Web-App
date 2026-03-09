@@ -16,7 +16,7 @@ const ADMIN_PASSWORD = "admin123";
 
 export default function AdminPage() {
   const [password, setPassword] = useState("");
-  const [loggedIn, setLoggedIn] = useState(false);
+  const [loggedIn, setLoggedIn] = useState(() => localStorage.getItem("adminLoggedIn") === "true");
   const [error, setError] = useState("");
   const [entries, setEntries] = useState<any[]>([]);
   const [view, setView] = useState<"monthly" | "daily" | "yearly">("monthly");
@@ -39,7 +39,7 @@ export default function AdminPage() {
   }, [loggedIn]);
 
   const handleLogin = () => {
-    if (password === ADMIN_PASSWORD) setLoggedIn(true);
+    if (password === ADMIN_PASSWORD) { setLoggedIn(true); localStorage.setItem("adminLoggedIn", "true"); }
     else setError("Wrong password.");
   };
 
@@ -166,7 +166,7 @@ export default function AdminPage() {
                 </button>
               ))}
             </div>
-            <button onClick={() => setLoggedIn(false)} className="text-xs text-gray-400 hover:text-red-400">Logout</button>
+            <button onClick={() => { setLoggedIn(false); localStorage.removeItem("adminLoggedIn"); }} className="text-xs text-gray-400 hover:text-red-400">Logout</button>
           </div>
         </div>
       </div>
@@ -195,3 +195,4 @@ export default function AdminPage() {
     </div>
   );
 }
+
