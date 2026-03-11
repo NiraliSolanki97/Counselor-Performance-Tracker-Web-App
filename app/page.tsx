@@ -131,7 +131,7 @@ export default function Home() {
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
           <div>
-            <img src="/logo.png" alt="Leap GeeBee" className="h-8 object-contain" />
+            <img src="/logo.png" alt="Leap GeeBee" className="h-12 object-contain" />
             <h1 className="text-base font-bold text-gray-800">{submittedName}</h1>
             <p className="text-xs text-gray-400">{today}</p>
           </div>
@@ -309,4 +309,5 @@ export default function Home() {
     </div>
   );
 }
+
 
