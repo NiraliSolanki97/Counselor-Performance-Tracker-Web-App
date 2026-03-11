@@ -197,7 +197,7 @@ export default function AdminPage() {
       {/* Header */}
       <div className="bg-white border-b border-gray-200 px-6 py-3">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <img src="/logo.png" alt="Leap GeeBee" className="h-12 object-contain" />
+          <img src="/logo.png" alt="Leap GeeBee" className="h-16 object-contain" />
             <h1 className="text-lg font-bold text-gray-800">Admin Dashboard</h1>
           <div className="flex items-center gap-3">
             <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
@@ -241,5 +241,6 @@ export default function AdminPage() {
     </div>
   );
 }
+
 
 
