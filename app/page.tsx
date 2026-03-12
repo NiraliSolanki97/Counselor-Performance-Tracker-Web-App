@@ -1,4 +1,5 @@
-﻿"use client";
+﻿$newContent = @'
+"use client";
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
 import { doc, setDoc, onSnapshot, collection, query } from "firebase/firestore";
@@ -86,8 +87,6 @@ export default function Home() {
   };
 
   const monthEntries = allEntries.filter(e => e.date?.startsWith(`${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`));
-
-  // Financial Year April to March
   const fyStartYear = now.getMonth() >= 3 ? now.getFullYear() : now.getFullYear() - 1;
   const yearEntries = allEntries.filter(e => {
     if (!e.date) return false;
@@ -103,12 +102,15 @@ export default function Home() {
 
   if (!submittedName) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="bg-white rounded-xl shadow-md p-6 w-full max-w-xs border border-gray-100">
-          <h1 className="text-lg font-bold text-gray-800 mb-1">Welcome 👋</h1>
-          <p className="text-gray-400 text-xs mb-4">Enter your name to start tracking</p>
+      <div className="min-h-screen flex items-center justify-center bg-black">
+        <div className="bg-gray-900 rounded-xl shadow-xl p-6 w-full max-w-xs border border-green-500">
+          <div className="flex justify-center mb-4">
+            <img src="/logo.png" alt="Leap GeeBee" className="h-16 object-contain" />
+          </div>
+          <h1 className="text-lg font-bold text-white mb-1 text-center">Welcome 👋</h1>
+          <p className="text-gray-400 text-xs mb-4 text-center">Enter your name to start tracking</p>
           <input
-            className="w-full border border-gray-200 rounded-lg px-3 py-2 text-gray-700 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mb-3"
+            className="w-full border border-green-500 rounded-lg px-3 py-2 text-white bg-gray-800 font-medium text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mb-3"
             placeholder="Your full name"
             value={name}
             onChange={(e) => setName(e.target.value)}
@@ -116,7 +118,7 @@ export default function Home() {
           />
           <button
             onClick={handleNameSubmit}
-            className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-2 rounded-lg transition text-sm"
+            className="w-full bg-green-500 hover:bg-green-600 text-black font-bold py-2 rounded-lg transition text-sm"
           >
             Continue →
           </button>
@@ -126,22 +128,24 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-3">
+      <div className="bg-gray-900 border-b border-green-500 px-6 py-3">
         <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div>
+          <div className="flex items-center gap-3">
             <img src="/logo.png" alt="Leap GeeBee" className="h-16 object-contain" />
-            <h1 className="text-base font-bold text-gray-800">{submittedName}</h1>
-            <p className="text-xs text-gray-400">{today}</p>
+            <div>
+              <h1 className="text-base font-bold text-white">{submittedName}</h1>
+              <p className="text-xs text-gray-400">{today}</p>
+            </div>
           </div>
           <div className="flex items-center gap-3">
-            <div className="flex bg-gray-100 rounded-lg p-1 gap-1">
+            <div className="flex bg-black rounded-lg p-1 gap-1 border border-gray-700">
               {(["daily", "monthly", "yearly"] as const).map(v => (
                 <button
                   key={v}
                   onClick={() => setView(v)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-white shadow text-green-700" : "text-gray-500"}`}
+                  className={`px-3 py-1 rounded-md text-xs font-bold transition capitalize ${view === v ? "bg-green-500 text-black" : "text-gray-400 hover:text-white"}`}
                 >
                   {v}
                 </button>
@@ -164,18 +168,18 @@ export default function Home() {
           <>
             <div className="grid grid-cols-2 gap-3 mb-4">
               {CARDS.map((card) => (
-                <div key={card.key} className="bg-white rounded-xl border border-gray-200 p-3">
-                  <p className="text-xs font-bold text-green-700 uppercase tracking-wide mb-2">{card.label}</p>
+                <div key={card.key} className="bg-gray-900 rounded-xl border border-gray-700 p-3">
+                  <p className="text-xs font-bold text-green-400 uppercase tracking-wide mb-2">{card.label}</p>
                   <input
                     type="number"
                     min="0"
-                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-gray-800 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-green-300 mb-2"
+                    className="w-full border border-gray-700 rounded-lg px-2 py-1.5 text-white bg-black font-bold text-sm focus:outline-none focus:ring-2 focus:ring-green-400 mb-2"
                     placeholder="0"
                     value={data[card.key]?.count || ""}
                     onChange={(e) => handleUpdate(card.key, "count", e.target.value)}
                   />
                   <textarea
-                    className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-gray-600 text-xs focus:outline-none focus:ring-2 focus:ring-green-300 resize-none"
+                    className="w-full border border-gray-700 rounded-lg px-2 py-1.5 text-gray-300 bg-black text-xs focus:outline-none focus:ring-2 focus:ring-green-400 resize-none"
                     rows={2}
                     placeholder="Notes..."
                     value={data[card.key]?.notes || ""}
@@ -187,11 +191,11 @@ export default function Home() {
             <div className="flex items-center gap-3">
               <button
                 onClick={handleSave}
-                className="bg-green-600 hover:bg-green-700 text-white font-bold px-6 py-2 rounded-lg transition text-sm"
+                className="bg-green-500 hover:bg-green-600 text-black font-bold px-6 py-2 rounded-lg transition text-sm"
               >
                 Save
               </button>
-              {saved && <p className="text-green-600 text-sm font-semibold">✅ Saved!</p>}
+              {saved && <p className="text-green-400 text-sm font-semibold">✅ Saved!</p>}
             </div>
           </>
         )}
@@ -199,49 +203,49 @@ export default function Home() {
         {/* Monthly View */}
         {view === "monthly" && (
           <div>
-            <h2 className="text-sm font-bold text-gray-600 mb-4">
+            <h2 className="text-sm font-bold text-gray-300 mb-4">
               {now.toLocaleString("default", { month: "long" })} {now.getFullYear()} — My Summary
             </h2>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm mb-6">
+            <div className="bg-gray-900 rounded-2xl border border-gray-700 overflow-x-auto shadow-sm mb-6">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-green-50 border-b-2 border-green-100">
+                  <tr className="bg-black border-b-2 border-green-500">
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">{c.label}</th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-green-400 border-r border-gray-700 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     {CARDS.map(c => (
-                      <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-r border-gray-100">{monthlySummary[c.key]}</td>
+                      <td key={c.key} className="text-center px-6 py-3 font-bold text-white border-r border-gray-700">{monthlySummary[c.key]}</td>
                     ))}
                   </tr>
                 </tbody>
               </table>
             </div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Day by Day</h3>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
+            <div className="bg-gray-900 rounded-2xl border border-gray-700 overflow-x-auto shadow-sm">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-green-50 border-b-2 border-green-100">
-                    <th className="text-left px-6 py-3 font-bold text-gray-700">Date</th>
+                  <tr className="bg-black border-b-2 border-green-500">
+                    <th className="text-left px-6 py-3 font-bold text-green-400">Date</th>
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-l border-gray-100 whitespace-nowrap">{c.label}</th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-green-400 border-l border-gray-700 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   {monthEntries.sort((a, b) => a.date > b.date ? -1 : 1).map((e, idx) => (
-                    <tr key={e.date} className={`border-b border-gray-100 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                      <td className="px-6 py-3 font-semibold text-gray-700">{e.date}</td>
+                    <tr key={e.date} className={`border-b border-gray-700 ${idx % 2 === 0 ? "bg-gray-900" : "bg-black"}`}>
+                      <td className="px-6 py-3 font-semibold text-gray-300">{e.date}</td>
                       {CARDS.map(c => (
-                        <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-l border-gray-100">{e[c.key]?.count || 0}</td>
+                        <td key={c.key} className="text-center px-6 py-3 font-bold text-white border-l border-gray-700">{e[c.key]?.count || 0}</td>
                       ))}
                     </tr>
                   ))}
                   {monthEntries.length === 0 && (
-                    <tr><td colSpan={7} className="text-center py-8 text-gray-400">No data this month</td></tr>
+                    <tr><td colSpan={7} className="text-center py-8 text-gray-500">No data this month</td></tr>
                   )}
                 </tbody>
               </table>
@@ -252,33 +256,33 @@ export default function Home() {
         {/* Yearly View */}
         {view === "yearly" && (
           <div>
-            <h2 className="text-sm font-bold text-gray-600 mb-4">FY {fyStartYear}-{fyStartYear + 1} (Apr-Mar) — My Summary</h2>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm mb-6">
+            <h2 className="text-sm font-bold text-gray-300 mb-4">FY {fyStartYear}-{fyStartYear + 1} (Apr-Mar) — My Summary</h2>
+            <div className="bg-gray-900 rounded-2xl border border-gray-700 overflow-x-auto shadow-sm mb-6">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-green-50 border-b-2 border-green-100">
+                  <tr className="bg-black border-b-2 border-green-500">
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-r border-gray-100 whitespace-nowrap">{c.label}</th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-green-400 border-r border-gray-700 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     {CARDS.map(c => (
-                      <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-r border-gray-100">{yearlySummary[c.key]}</td>
+                      <td key={c.key} className="text-center px-6 py-3 font-bold text-white border-r border-gray-700">{yearlySummary[c.key]}</td>
                     ))}
                   </tr>
                 </tbody>
               </table>
             </div>
             <h3 className="text-xs font-bold text-gray-500 uppercase tracking-widest mb-3">Month by Month</h3>
-            <div className="bg-white rounded-2xl border border-gray-200 overflow-x-auto shadow-sm">
+            <div className="bg-gray-900 rounded-2xl border border-gray-700 overflow-x-auto shadow-sm">
               <table className="w-full text-sm border-collapse">
                 <thead>
-                  <tr className="bg-green-50 border-b-2 border-green-100">
-                    <th className="text-left px-6 py-3 font-bold text-gray-700">Month</th>
+                  <tr className="bg-black border-b-2 border-green-500">
+                    <th className="text-left px-6 py-3 font-bold text-green-400">Month</th>
                     {CARDS.map(c => (
-                      <th key={c.key} className="text-center px-6 py-3 font-bold text-gray-700 border-l border-gray-100 whitespace-nowrap">{c.label}</th>
+                      <th key={c.key} className="text-center px-6 py-3 font-bold text-green-400 border-l border-gray-700 whitespace-nowrap">{c.label}</th>
                     ))}
                   </tr>
                 </thead>
@@ -290,12 +294,12 @@ export default function Home() {
                     const mEntries = yearEntries.filter(e => e.date?.startsWith(monthStr));
                     const mTotals = getSummary(mEntries);
                     return (
-                      <tr key={monthStr} className={`border-b border-gray-100 ${i % 2 === 0 ? "bg-white" : "bg-gray-50"}`}>
-                        <td className="px-6 py-3 font-semibold text-gray-700">
+                      <tr key={monthStr} className={`border-b border-gray-700 ${i % 2 === 0 ? "bg-gray-900" : "bg-black"}`}>
+                        <td className="px-6 py-3 font-semibold text-gray-300">
                           {new Date(year, monthIndex, 1).toLocaleString("default", { month: "long", year: "numeric" })}
                         </td>
                         {CARDS.map(c => (
-                          <td key={c.key} className="text-center px-6 py-3 font-bold text-gray-800 border-l border-gray-100">{mTotals[c.key] || 0}</td>
+                          <td key={c.key} className="text-center px-6 py-3 font-bold text-white border-l border-gray-700">{mTotals[c.key] || 0}</td>
                         ))}
                       </tr>
                     );
@@ -309,6 +313,5 @@ export default function Home() {
     </div>
   );
 }
-
-
-
+'@
+Set-Content -Path "app/page.tsx" -Value $newContent -Encoding UTF8
