@@ -1,4 +1,4 @@
-﻿$newContent = @'
+﻿
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "../../lib/firebase";
@@ -249,3 +249,4 @@ export default function AdminPage() {
 }
 '@
 Set-Content -Path "app/admin/page.tsx" -Value $newContent -Encoding UTF8
+

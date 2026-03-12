@@ -1,4 +1,4 @@
-﻿$newContent = @'
+﻿
 "use client";
 import { useState, useEffect } from "react";
 import { db } from "../lib/firebase";
